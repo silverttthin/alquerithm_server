@@ -1,32 +1,11 @@
-from typing import List
-
-from fastapi import FastAPI, Body
-
-# DB 가져오기
-from database import user_collection
-from database import post_collection
-from database import comment_collection
-
-from models import PostModel, PostCollection
+from fastapi import FastAPI
+from comment_domain.comment_routes import router as comment_router
+from post_domain.post_routes import router as post_router
+from user_domain.user_routes import router as user_router
 
 app = FastAPI()
 
-
-@app.post(
-    "/posts/",
-    response_description="Add new post",
-    response_model=PostModel
-)
-async def create_post(post: PostModel = Body(...)):
-    new_post = await post_collection.insert_one(post.model_dump(by_alias=True, exclude=["id"]))
-
-    created_post = await post_collection.find_one({"_id": new_post.inserted_id})
-    return created_post
-
-@app.get("/posts/", response_model=PostCollection)
-async def get_posts():
-    posts = await post_collection.find().to_list(length=None)
-    return PostCollection(posts=posts)
-
-
-
+# 라우터 등록
+app.include_router(comment_router, prefix="/comments", tags=["comments"])
+app.include_router(post_router, prefix="/posts", tags=["posts"])
+app.include_router(user_router, prefix="/users", tags=["users"])
