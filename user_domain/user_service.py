@@ -100,6 +100,7 @@ def get_solved_problems_today_sync(boj_username: str) -> int:
 
     return solved_problems
 
+
 async def get_solved_problems_today(boj_username: str) -> int:
     loop = asyncio.get_running_loop()
     with ThreadPoolExecutor() as pool:

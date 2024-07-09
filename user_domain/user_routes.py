@@ -5,10 +5,9 @@ from fastapi import APIRouter, Body, HTTPException, Depends
 from auth import manager, authenticate_user
 from user_domain.user_model import UserModel, UserLoginModel
 from database import user_collection
-from user_domain.user_service import get_3_tags, get_solved_list, get_solved_problems_today  # user_service.py 파일의 함수 임포트
+from user_domain.user_service import get_3_tags, get_solved_list, get_solved_problems_today
 
 router = APIRouter()
-
 
 
 # 사용자 등록 엔드포인트
@@ -33,6 +32,7 @@ async def create_user(user: UserModel = Body(...)):
     created_user = await user_collection.find_one({"_id": new_user.inserted_id})
     return created_user
 
+
 # 로그인 엔드포인트
 @router.post("/login")
 async def login(data: UserLoginModel = Body(...)):
@@ -40,8 +40,22 @@ async def login(data: UserLoginModel = Body(...)):
     user = await authenticate_user(data.username, data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    # 데이터베이스에서 사용자 정보 가져오기
+    db_user = await user_collection.find_one({"username": user.username})
+    if not db_user or "boj_username" not in db_user:
+        raise HTTPException(status_code=400, detail="BOJ username not found for the user")
+
+    # 오늘 풀린 문제 수 갱신
+    todays_problems = await get_solved_problems_today(db_user["boj_username"])
+    await user_collection.update_one(
+        {"_id": db_user["_id"]},
+        {"$set": {"todays": todays_problems}}
+    )
+
     # 액세스 토큰 생성
-    access_token = manager.create_access_token(data={"sub": user.username}, expires_delta=timedelta(hours=1000))
+    manager.default_expiry = timedelta(days=7)
+    access_token = manager.create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -50,3 +64,4 @@ async def login(data: UserLoginModel = Body(...)):
 async def get_users():
     users = await user_collection.find().to_list(length=None)
     return users
+

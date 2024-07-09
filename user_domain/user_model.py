@@ -23,6 +23,7 @@ class UserModel(BaseModel):
     my_posts: List[PostModel] = []
     commented_posts: List[CommentModel] = []
 
+
 class UserLoginModel(BaseModel):
     username: str
     password: str

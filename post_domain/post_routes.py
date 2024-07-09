@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 # 게시글 작성 엔드포인트
-@router.post("/", response_description="Add new post", response_model=PostModel)
+@router.post("/",response_model=PostModel)
 async def create_post(post: PostModel = Body(...), current_user: UserModel = Depends(get_current_user)):
     # 1. 현 유저의 ID값을 author_id 필드값으로 넣기
     post.author_id = str(current_user.id)
