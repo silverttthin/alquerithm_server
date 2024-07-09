@@ -1,5 +1,13 @@
+import asyncio
+
 import httpx
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.service import Service
+from concurrent.futures import ThreadPoolExecutor
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 async def get_3_tags(nickname):
@@ -50,7 +58,8 @@ async def get_solved_list(boj_username: str) -> list[str]:
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # 문제 리스트가 있는 div를 찾기
-    problem_list_div = soup.select_one('body > div.wrapper > div.container.content > div.row > div:nth-child(2) > div > div.col-md-9 > div:nth-child(2) > div.panel-body > div.problem-list')
+    problem_list_div = soup.select_one(
+        'body > div.wrapper > div.container.content > div.row > div:nth-child(2) > div > div.col-md-9 > div:nth-child(2) > div.panel-body > div.problem-list')
 
     if not problem_list_div:
         raise Exception('Problem list not found')
@@ -59,3 +68,40 @@ async def get_solved_list(boj_username: str) -> list[str]:
     problems = [problem.get_text(strip=True) for problem in problem_list_div.find_all('a')]
 
     return problems
+
+
+def get_solved_problems_today_sync(boj_username: str) -> int:
+    url = f'https://solved.ac/profile/{boj_username}'
+
+    # 웹 드라이버 설정
+    service = Service(ChromeDriverManager().install())
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")  # 헤드리스 모드로 실행 (브라우저 창을 띄우지 않음)
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+
+    # 웹 드라이버 실행
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.get(url)
+    driver.implicitly_wait(10)  # 페이지 로딩 대기
+
+    # SVG 태그 내의 첫 번째 rect 태그 찾기
+    first_rect = driver.find_element(By.CSS_SELECTOR, 'svg rect')
+
+    # 마우스 호버 액션 수행
+    actions = ActionChains(driver)
+    actions.move_to_element(first_rect).perform()
+
+    # 호버 결과로 나타나는 텍스트 추출
+    hover_text = driver.find_element(By.CSS_SELECTOR, 'text[fill="#ffffff"][pointer-events="none"]').text
+    driver.quit()
+
+    solved_problems = int(hover_text.split(': ')[1].split('문제')[0])
+
+    return solved_problems
+
+async def get_solved_problems_today(boj_username: str) -> int:
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor() as pool:
+        result = await loop.run_in_executor(pool, get_solved_problems_today_sync, boj_username)
+    return result

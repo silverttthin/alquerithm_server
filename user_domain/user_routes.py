@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, HTTPException, Depends
 from auth import manager, authenticate_user
 from user_domain.user_model import UserModel, UserLoginModel
 from database import user_collection
-from user_domain.user_service import get_3_tags, get_solved_list  # user_service.py 파일의 함수 임포트
+from user_domain.user_service import get_3_tags, get_solved_list, get_solved_problems_today  # user_service.py 파일의 함수 임포트
 
 router = APIRouter()
 
@@ -14,13 +14,18 @@ router = APIRouter()
 # 사용자 등록 엔드포인트
 @router.post("/register", response_model=UserModel)
 async def create_user(user: UserModel = Body(...)):
-    # 작업 A 수행
+    # crawling 정보들 모델에 박아넣기 - top, bottom tag
     top_3_tags, bottom_3_tags = await get_3_tags(user.boj_username)
     user.most_tags = top_3_tags
     user.least_tags = bottom_3_tags
 
+    # solved_list
     solved_list = await get_solved_list(user.boj_username)
     user.solved_list = solved_list
+
+    # todays
+    todays = await get_solved_problems_today(user.boj_username)
+    user.today_solved = todays
 
     # 새 사용자 데이터베이스에 삽입
     new_user = await user_collection.insert_one(user.model_dump(by_alias=True, exclude=["id"]))

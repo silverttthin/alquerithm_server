@@ -17,6 +17,7 @@ class UserModel(BaseModel):
     least_tags: List[str] = []
     alias_num: int = 3
     solved_list: List[str] = []
+    today_solved: int = 0
     #ㄴ--------------------------------------
 
     my_posts: List[PostModel] = []
