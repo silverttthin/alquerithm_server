@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 
-MONGO_DETAILS = "mongodb+srv://sco3o17:1q2w3e4r@cluster0.al5hilk.mongodb.net/"
+MONGO_DETAILS = "mongodb+srv://ㅋㅋ 안알랴줌@cluster0.al5hilk.mongodb.net/"
 
 client = AsyncIOMotorClient(MONGO_DETAILS)
 post_database = client.Post
